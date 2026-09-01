@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>유튜브 썸네일 자동 제작기 - 최종</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    :root { color-scheme: dark; }
+
+    body {
+      margin: 0;
+      background: #101010;
+      color: #fff;
+      font-family: "Malgun Gothic", "Apple SD Gothic Neo", Arial, sans-serif;
+    }
+
+    .app {
+      width: min(1600px, 96vw);
+      margin: 22px auto 60px;
+    }
+
+    .top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 410px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .preview-wrap {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      padding: 12px;
+      border-radius: 14px;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border-radius: 8px;
+    }
+
+    .panel {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 14px;
+      padding: 16px;
+      max-height: calc(100vh - 28px);
+      overflow-y: auto;
+      position: sticky;
+      top: 14px;
+    }
+
+    .panel h2 {
+      font-size: 19px;
+      margin: 0 0 4px;
+    }
+
+    .sub {
+      font-size: 12px;
+      line-height: 1.55;
+      color: #a9a9a9;
+      margin-bottom: 14px;
+    }
+
+    .group {
+      padding: 15px 0;
+      border-top: 1px solid #303030;
+    }
+
+    .group:first-of-type {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .group-title {
+      font-size: 14px;
+      font-weight: 900;
+      color: #fff;
+      margin-bottom: 11px;
+    }
+
+    .field {
+      margin-bottom: 11px;
+    }
+
+    .field:last-child { margin-bottom: 0; }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 6px;
+      color: #ddd;
+    }
+
+    input[type="text"],
+    input[type="file"],
+    select {
+      width: 100%;
+      background: #0d0d0d;
+      border: 1px solid #3b3b3b;
+      border-radius: 8px;
+      color: #fff;
+      padding: 9px 10px;
+      outline: none;
+    }
+
+    input[type="text"]:focus,
+    select:focus {
+      border-color: #777;
+    }
+
+    input[type="range"] { width: 100%; }
+
+    input[type="color"] {
+      width: 44px;
+      min-width: 44px;
+      height: 34px;
+      padding: 2px;
+      border: 1px solid #454545;
+      border-radius: 7px;
+      background: #111;
+      cursor: pointer;
+    }
+
+    .range-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 72px;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .value {
+      background: #0d0d0d;
+      border: 1px solid #333;
+      border-radius: 7px;
+      text-align: center;
+      padding: 6px 3px;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .line-card {
+      border: 1px solid #303030;
+      background: #151515;
+      border-radius: 10px;
+      padding: 11px;
+      margin-bottom: 9px;
+    }
+
+    .line-card:last-child { margin-bottom: 0; }
+
+    .line-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .line-name {
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .color-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .color-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border: 1px solid #2d2d2d;
+      border-radius: 8px;
+      padding: 6px 7px;
+      background: #101010;
+    }
+
+    .color-box span {
+      font-size: 11px;
+      color: #cfcfcf;
+      font-weight: 700;
+    }
+
+    .special-border {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed #333;
+    }
+
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: #ccc;
+      margin-bottom: 7px;
+    }
+
+    .check-row input {
+      width: 16px;
+      height: 16px;
+    }
+
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 9px;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .download {
+      background: #fff;
+      color: #111;
+    }
+
+    .reset {
+      margin-top: 8px;
+      background: #303030;
+      color: #fff;
+    }
+
+    .preset {
+      margin-top: 8px;
+      background: #222;
+      color: #fff;
+      border: 1px solid #444;
+    }
+
+    .hint {
+      margin-top: 10px;
+      font-size: 11px;
+      line-height: 1.6;
+      color: #999;
+    }
+
+    .spec {
+      margin-top: 18px;
+      padding: 14px 16px;
+      background: #171717;
+      border: 1px solid #2e2e2e;
+      border-radius: 12px;
+      font-size: 12px;
+      line-height: 1.7;
+      color: #bbb;
+    }
+
+    .spec b { color: #fff; }
+
+    @media (max-width: 1050px) {
+      .top { grid-template-columns: 1fr; }
+      .panel {
+        position: static;
+        max-height: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+<div class="app">
+  <div class="top">
+
+    <div class="preview-wrap">
+      <canvas id="thumb" width="1280" height="720"></canvas>
+    </div>
+
+    <aside class="panel">
+      <h2>썸네일 자동 제작기</h2>
+      <div class="sub">
+        사진 이동은 마이너스(-) 값까지 가능하고,
+        4줄 글자색·테두리색·굵기·글씨 크기·세로 위치를 각각 직접 조절할 수 있습니다.
+      </div>
+
+      <div class="group">
+        <div class="group-title">1. 사진</div>
+
+        <div class="field">
+          <label for="imageInput">이미지 넣기</label>
+          <input id="imageInput" type="file" accept="image/*" />
+        </div>
+
+        <div class="field">
+          <label for="imageMode">이미지 맞춤</label>
+          <select id="imageMode">
+            <option value="cover" selected>화면 가득 채우기</option>
+            <option value="contain">사진 전체 보이기</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>사진 좌우 위치 (-600px ~ +600px)</label>
+          <div class="range-row">
+            <input id="imgX" type="range" min="-600" max="600" step="5" value="0" />
+            <div class="value" id="imgXVal">0px</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>사진 상하 위치 (-400px ~ +400px)</label>
+          <div class="range-row">
+            <input id="imgY" type="range" min="-400" max="400" step="5" value="0" />
+            <div class="value" id="imgYVal">0px</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>사진 확대</label>
+          <div class="range-row">
+            <input id="imgZoom" type="range" min="70" max="220" step="1" value="100" />
+            <div class="value" id="imgZoomVal">100%</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>왼쪽 검정 그라데이션</label>
+          <div class="range-row">
+            <input id="darkness" type="range" min="0" max="100" step="1" value="96" />
+            <div class="value" id="darknessVal">96</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-title">2. 문구 · 색상 · 굵기 · 크기 · 줄 위치</div>
+
+        <div class="line-card">
+          <div class="line-head"><div class="line-name">첫째 줄</div></div>
+          <input id="line1" type="text" value="아침에 삶은달걀" />
+          <div class="color-row">
+            <div class="color-box"><span>글자색</span><input id="fill1" type="color" value="#ffed00" /></div>
+            <div class="color-box"><span>테두리색</span><input id="border1" type="color" value="#050505" /></div>
+          </div>
+          <div class="field" style="margin-top:9px;">
+            <label>첫째 줄 글자 굵기</label>
+            <div class="range-row">
+              <input id="weight1" type="range" min="400" max="1400" step="100" value="1100" />
+              <div class="value" id="weight1Val">1100</div>
+            </div>
+          </div>
+          <div class="field" style="margin-top:9px;">
+            <label>첫째 줄 글씨 크기</label>
+            <div class="range-row">
+              <input id="size1" type="range" min="70" max="220" step="1" value="124" />
+              <div class="value" id="size1Val">124px</div>
+            </div>
+          </div>
+          <div class="field" style="margin-top:9px;">
+            <label>첫째 줄 세로 위치</label>
+            <div class="range-row">
+              <input id="y1" type="range" min="70" max="650" step="2" value="130" />
+              <div class="value" id="y1Val">130px</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="line-card">
+          <div class="line-head"><div class="line-name">둘째 줄</div></div>
+          <input id="line2" type="text" value="이것과 꼭 드세요!" />
+          <div class="color-row">
+            <div class="color-box"><span>글자색</span><input id="fill2" type="color" value="#ffffff" /></div>
+            <div class="color-box"><span>테두리색</span><input id="border2" type="color" value="#050505" /></div>
+          </div>
+          <div class="field" style="margin-top:9px;">
+            <label>둘째 줄 글자 굵기</label>
+            <div class="range-row">
+              <input id="weight2" type="range" min="400" max="1400" step="100" value="1100" />
+              <div class="value" id="weight2Val">1100</div>
+            </div>
+          </div>
+          <div class="field" style="margin-top:9px;">
+            <label>둘째 줄 글씨 크기</label>
+            <div class="range-row">
+              <input id="size2" type="range" min="70" max="220" step="1" value="124" />
+              <div class="value" id="size2Val">124px</div>
+            </div>
+          </div>
+          <div class="field" style="margin-top:9px;">
+            <label>둘째 줄 세로 위치</label>
+            <div class="range-row">
+              <input id="y2" type="range" min="70" max="650" step="2" value="305" />
+              <div class="value" id="y2Val">305px</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="line-card">
+          <div class="line-head"><div class="line-name">셋째 줄</div></div>
+          <input id="line3" type="text" value="콩팥 회복" />
+          <div class="color-row">
+            <div class="color-box"><span>글자색</span><input id="fill3" type="color" value="#f32828" /></div>
+            <div class="color-box"><span>바깥선</span><input id="border3" type="color" value="#050505" /></div>
+          </div>
+          <div class="special-border">
+            <div class="check-row">
+              <input id="double3" type="checkbox" checked />
+              <label for="double3" style="margin:0;">흰색 안쪽 테두리 사용</label>
+            </div>
+            <div class="color-box">
+              <span>안쪽 테두리색</span>
+              <input id="inner3" type="color" value="#ffffff" />
+            </div>
+          </div>
+          <div class="field" style="margin-top:9px;">
+            <label>셋째 줄 글자 굵기</label>
+            <div class="range-row">
+              <input id="weight3" type="range" min="400" max="1400" step="100" value="1100" />
+              <div class="value" id="weight3Val">1100</div>
+            </div>
+          </div>
+          <div class="field" style="margin-top:9px;">
+            <label>셋째 줄 글씨 크기</label>
+            <div class="range-row">
+              <input id="size3" type="range" min="70" max="220" step="1" value="124" />
+              <div class="value" id="size3Val">124px</div>
+            </div>
+          </div>
+          <div class="field" style="margin-top:9px;">
+            <label>셋째 줄 세로 위치</label>
+            <div class="range-row">
+              <input id="y3" type="range" min="70" max="650" step="2" value="500" />
+              <div class="value" id="y3Val">500px</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="line-card">
+          <div class="line-head"><div class="line-name">넷째 줄</div></div>
+          <input id="line4" type="text" value="염증 완전히 사라집니다" />
+          <div class="color-row">
+            <div class="color-box"><span>글자색</span><input id="fill4" type="color" value="#2da817" /></div>
+            <div class="color-box"><span>테두리색</span><input id="border4" type="color" value="#050505" /></div>
+          </div>
+          <div class="field" style="margin-top:9px;">
+            <label>넷째 줄 글자 굵기</label>
+            <div class="range-row">
+              <input id="weight4" type="range" min="400" max="1400" step="100" value="1100" />
+              <div class="value" id="weight4Val">1100</div>
+            </div>
+          </div>
+          <div class="field" style="margin-top:9px;">
+            <label>넷째 줄 글씨 크기</label>
+            <div class="range-row">
+              <input id="size4" type="range" min="70" max="220" step="1" value="124" />
+              <div class="value" id="size4Val">124px</div>
+            </div>
+          </div>
+          <div class="field" style="margin-top:9px;">
+            <label>넷째 줄 세로 위치</label>
+            <div class="range-row">
+              <input id="y4" type="range" min="70" max="710" step="2" value="690" />
+              <div class="value" id="y4Val">690px</div>
+            </div>
+          </div>
+        </div>
+
+        <button class="preset" id="evenSpacingBtn">4줄 기본 간격으로 정렬</button>
+      </div>
+
+      <div class="group">
+        <button class="download" id="downloadBtn">1280×720 PNG로 저장</button>
+        <button class="reset" id="resetBtn">전체 기본값으로 되돌리기</button>
+
+        <div class="hint">
+          굵기는 900보다 더 올릴 수 있게 했고,
+          실제로 더 두껍게 보이도록 내부적으로 <b>가짜 볼드(faux bold)</b>가 함께 적용됩니다.
+          글씨 크기도 각 줄마다 개별적으로 더 크게 키울 수 있습니다.
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="spec">
+    <b>이번 최종 버전 추가 기능</b><br>
+    · 첫째~넷째 줄 <b>글자 굵기 400 ~ 1400</b> 개별 조절<br>
+    · 굵기 1000 이상에서는 실제로 더 굵게 보이도록 <b>추가 볼드 렌더링</b> 적용<br>
+    · 첫째~넷째 줄 <b>글씨 크기 70px ~ 220px</b> 개별 조절<br>
+    · 사진 좌우 이동: <b>-600px ~ +600px</b><br>
+    · 사진 상하 이동: <b>-400px ~ +400px</b><br>
+    · 각 줄 <b>글자색 / 테두리색 / 세로 위치</b> 개별 조절 가능<br>
+    · 셋째 줄은 <b>이중 테두리 ON/OFF + 안쪽 테두리색 변경</b> 가능
+  </div>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById("thumb");
+  const ctx = canvas.getContext("2d");
+
+  const W = canvas.width;
+  const H = canvas.height;
+  const $ = (id) => document.getElementById(id);
+
+  const els = {
+    imageInput: $("imageInput"),
+    imageMode: $("imageMode"),
+    imgX: $("imgX"),
+    imgY: $("imgY"),
+    imgZoom: $("imgZoom"),
+    darkness: $("darkness"),
+
+    line1: $("line1"),
+    line2: $("line2"),
+    line3: $("line3"),
+    line4: $("line4"),
+
+    fill1: $("fill1"),
+    fill2: $("fill2"),
+    fill3: $("fill3"),
+    fill4: $("fill4"),
+
+    border1: $("border1"),
+    border2: $("border2"),
+    border3: $("border3"),
+    border4: $("border4"),
+
+    double3: $("double3"),
+    inner3: $("inner3"),
+
+    y1: $("y1"),
+    y2: $("y2"),
+    y3: $("y3"),
+    y4: $("y4"),
+
+    weight1: $("weight1"),
+    weight2: $("weight2"),
+    weight3: $("weight3"),
+    weight4: $("weight4"),
+
+    size1: $("size1"),
+    size2: $("size2"),
+    size3: $("size3"),
+    size4: $("size4"),
+
+    imgXVal: $("imgXVal"),
+    imgYVal: $("imgYVal"),
+    imgZoomVal: $("imgZoomVal"),
+    darknessVal: $("darknessVal"),
+
+    y1Val: $("y1Val"),
+    y2Val: $("y2Val"),
+    y3Val: $("y3Val"),
+    y4Val: $("y4Val"),
+
+    weight1Val: $("weight1Val"),
+    weight2Val: $("weight2Val"),
+    weight3Val: $("weight3Val"),
+    weight4Val: $("weight4Val"),
+
+    size1Val: $("size1Val"),
+    size2Val: $("size2Val"),
+    size3Val: $("size3Val"),
+    size4Val: $("size4Val"),
+
+    evenSpacingBtn: $("evenSpacingBtn"),
+    downloadBtn: $("downloadBtn"),
+    resetBtn: $("resetBtn")
+  };
+
+  let uploadedImage = null;
+
+  const TEXT = {
+    x: 7,
+    minFontSize: 48,
+    maxWidths: [960, 970, 1030, 1255],
+    letterSpacingPx: -5,
+    fontFamily: '"Malgun Gothic", "Noto Sans KR", Arial, sans-serif'
+  };
+
+  function getLineStyles() {
+    return [
+      {
+        fill: els.fill1.value,
+        outerStroke: els.border1.value,
+        outerStrokeWidth: 8,
+        innerStroke: null,
+        innerStrokeWidth: 0,
+        shadowColor: "rgba(0,0,0,.65)",
+        shadowBlur: 2,
+        shadowOffsetX: 3,
+        shadowOffsetY: 4
+      },
+      {
+        fill: els.fill2.value,
+        outerStroke: els.border2.value,
+        outerStrokeWidth: 8,
+        innerStroke: null,
+        innerStrokeWidth: 0,
+        shadowColor: "rgba(0,0,0,.70)",
+        shadowBlur: 2,
+        shadowOffsetX: 3,
+        shadowOffsetY: 4
+      },
+      {
+        fill: els.fill3.value,
+        outerStroke: els.border3.value,
+        outerStrokeWidth: els.double3.checked ? 14 : 9,
+        innerStroke: els.double3.checked ? els.inner3.value : null,
+        innerStrokeWidth: els.double3.checked ? 7 : 0,
+        shadowColor: "rgba(0,0,0,.50)",
+        shadowBlur: 1,
+        shadowOffsetX: 3,
+        shadowOffsetY: 4
+      },
+      {
+        fill: els.fill4.value,
+        outerStroke: els.border4.value,
+        outerStrokeWidth: 9,
+        innerStroke: null,
+        innerStrokeWidth: 0,
+        shadowColor: "rgba(0,0,0,.70)",
+        shadowBlur: 2,
+        shadowOffsetX: 3,
+        shadowOffsetY: 4
+      }
+    ];
+  }
+
+  function getBaselines() {
+    return [
+      Number(els.y1.value),
+      Number(els.y2.value),
+      Number(els.y3.value),
+      Number(els.y4.value)
+    ];
+  }
+
+  function getWeights() {
+    return [
+      Number(els.weight1.value),
+      Number(els.weight2.value),
+      Number(els.weight3.value),
+      Number(els.weight4.value)
+    ];
+  }
+
+  function getBaseSizes() {
+    return [
+      Number(els.size1.value),
+      Number(els.size2.value),
+      Number(els.size3.value),
+      Number(els.size4.value)
+    ];
+  }
+
+  function setCanvasFont(size, weight = 900) {
+    const nativeWeight = Math.min(weight, 900);
+    ctx.font = `${nativeWeight} ${size}px ${TEXT.fontFamily}`;
+
+    if ("letterSpacing" in ctx) {
+      ctx.letterSpacing = `${TEXT.letterSpacingPx}px`;
+    }
+  }
+
+  function getAutoFontSize(text, maxWidth, baseSize, weight = 900) {
+    let size = baseSize;
+
+    while (size > TEXT.minFontSize) {
+      setCanvasFont(size, weight);
+      if (ctx.measureText(text).width <= maxWidth) break;
+      size -= 1;
+    }
+
+    return size;
+  }
+
+  function drawImageSmart(img) {
+    const mode = els.imageMode.value;
+    const shiftX = Number(els.imgX.value);
+    const shiftY = Number(els.imgY.value);
+    const zoom = Number(els.imgZoom.value) / 100;
+
+    const iw = img.naturalWidth;
+    const ih = img.naturalHeight;
+
+    let scale;
+    if (mode === "contain") {
+      scale = Math.min(W / iw, H / ih);
+    } else {
+      scale = Math.max(W / iw, H / ih);
+    }
+
+    scale *= zoom;
+
+    const dw = iw * scale;
+    const dh = ih * scale;
+
+    const dx = (W - dw) / 2 + shiftX;
+    const dy = (H - dh) / 2 + shiftY;
+
+    ctx.drawImage(img, dx, dy, dw, dh);
+  }
+
+  function drawPlaceholder() {
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, W, H);
+
+    const g = ctx.createLinearGradient(0, 0, W, 0);
+    g.addColorStop(0, "#050505");
+    g.addColorStop(0.67, "#171717");
+    g.addColorStop(1, "#2a2a2a");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.save();
+    ctx.fillStyle = "rgba(255,255,255,.20)";
+    ctx.font = '700 30px "Malgun Gothic", sans-serif';
+    ctx.textAlign = "right";
+    ctx.fillText("오른쪽 패널에서 이미지를 넣어주세요", W - 42, 54);
+    ctx.restore();
+  }
+
+  function drawDarkGradient() {
+    const d = Number(els.darkness.value) / 100;
+    const g = ctx.createLinearGradient(0, 0, W, 0);
+
+    g.addColorStop(0.00, `rgba(0,0,0,${Math.min(1, d)})`);
+    g.addColorStop(0.30, `rgba(0,0,0,${Math.min(1, d * 0.98)})`);
+    g.addColorStop(0.52, `rgba(0,0,0,${Math.min(1, d * 0.82)})`);
+    g.addColorStop(0.68, `rgba(0,0,0,${Math.min(1, d * 0.48)})`);
+    g.addColorStop(0.82, `rgba(0,0,0,${Math.min(1, d * 0.10)})`);
+    g.addColorStop(1.00, "rgba(0,0,0,0)");
+
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  function drawFauxBoldFill(text, x, y, fill, strength) {
+    ctx.fillStyle = fill;
+
+    if (strength <= 0) {
+      ctx.fillText(text, x, y);
+      return;
+    }
+
+    const offsets = [];
+    const unit = 0.18; // 텍스트 가장자리를 살짝 확장해서 더 두껍게 보이게 함.
+
+    for (let i = 1; i <= strength; i++) {
+      const d = i * unit;
+      offsets.push([ d, 0], [-d, 0], [0, d], [0, -d]);
+      if (i <= 3) {
+        offsets.push([ d,  d], [ d, -d], [-d,  d], [-d, -d]);
+      }
+    }
+
+    // 중앙도 같이 찍어줘야 채움이 자연스럽게 유지됨
+    ctx.fillText(text, x, y);
+    offsets.forEach(([ox, oy]) => ctx.fillText(text, x + ox, y + oy));
+  }
+
+  function getFauxBoldStrength(weight) {
+    if (weight <= 900) return 0;
+    return Math.max(0, Math.round((weight - 900) / 100));
+  }
+
+  function drawTextLine(text, index) {
+    if (!text.trim()) return;
+
+    const styles = getLineStyles();
+    const baselines = getBaselines();
+    const weights = getWeights();
+    const sizes = getBaseSizes();
+
+    const style = styles[index];
+    const y = baselines[index];
+    const maxWidth = TEXT.maxWidths[index];
+    const weight = weights[index];
+    const baseSize = sizes[index];
+
+    const fontSize = getAutoFontSize(text, maxWidth, baseSize, weight);
+    setCanvasFont(fontSize, weight);
+
+    ctx.save();
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.miterLimit = 1.5;
+
+    ctx.shadowColor = style.shadowColor;
+    ctx.shadowBlur = style.shadowBlur;
+    ctx.shadowOffsetX = style.shadowOffsetX;
+    ctx.shadowOffsetY = style.shadowOffsetY;
+
+    if (style.outerStroke && style.outerStrokeWidth > 0) {
+      ctx.lineWidth = style.outerStrokeWidth;
+      ctx.strokeStyle = style.outerStroke;
+      ctx.strokeText(text, TEXT.x, y);
+    }
+
+    if (style.innerStroke && style.innerStrokeWidth > 0) {
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+
+      ctx.lineWidth = style.innerStrokeWidth;
+      ctx.strokeStyle = style.innerStroke;
+      ctx.strokeText(text, TEXT.x, y);
+    }
+
+    ctx.shadowColor = "transparent";
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+
+    drawFauxBoldFill(
+      text,
+      TEXT.x,
+      y,
+      style.fill,
+      getFauxBoldStrength(weight)
+    );
+
+    ctx.restore();
+  }
+
+  function updateLabels() {
+    els.imgXVal.textContent = `${Number(els.imgX.value) > 0 ? "+" : ""}${els.imgX.value}px`;
+    els.imgYVal.textContent = `${Number(els.imgY.value) > 0 ? "+" : ""}${els.imgY.value}px`;
+    els.imgZoomVal.textContent = `${els.imgZoom.value}%`;
+    els.darknessVal.textContent = els.darkness.value;
+
+    els.y1Val.textContent = `${els.y1.value}px`;
+    els.y2Val.textContent = `${els.y2.value}px`;
+    els.y3Val.textContent = `${els.y3.value}px`;
+    els.y4Val.textContent = `${els.y4.value}px`;
+
+    els.weight1Val.textContent = els.weight1.value;
+    els.weight2Val.textContent = els.weight2.value;
+    els.weight3Val.textContent = els.weight3.value;
+    els.weight4Val.textContent = els.weight4.value;
+
+    els.size1Val.textContent = `${els.size1.value}px`;
+    els.size2Val.textContent = `${els.size2.value}px`;
+    els.size3Val.textContent = `${els.size3.value}px`;
+    els.size4Val.textContent = `${els.size4.value}px`;
+  }
+
+  function render() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, W, H);
+
+    if (uploadedImage) {
+      drawImageSmart(uploadedImage);
+    } else {
+      drawPlaceholder();
+    }
+
+    drawDarkGradient();
+
+    const lines = [
+      els.line1.value,
+      els.line2.value,
+      els.line3.value,
+      els.line4.value
+    ];
+
+    lines.forEach((text, i) => drawTextLine(text, i));
+  }
+
+  els.imageInput.addEventListener("change", (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        uploadedImage = img;
+        render();
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  const liveControls = [
+    els.imageMode, els.imgX, els.imgY, els.imgZoom, els.darkness,
+    els.line1, els.line2, els.line3, els.line4,
+    els.fill1, els.fill2, els.fill3, els.fill4,
+    els.border1, els.border2, els.border3, els.border4,
+    els.double3, els.inner3,
+    els.y1, els.y2, els.y3, els.y4,
+    els.weight1, els.weight2, els.weight3, els.weight4,
+    els.size1, els.size2, els.size3, els.size4
+  ];
+
+  liveControls.forEach((el) => {
+    el.addEventListener("input", () => {
+      updateLabels();
+      render();
+    });
+    el.addEventListener("change", () => {
+      updateLabels();
+      render();
+    });
+  });
+
+  els.evenSpacingBtn.addEventListener("click", () => {
+    els.y1.value = 130;
+    els.y2.value = 305;
+    els.y3.value = 500;
+    els.y4.value = 690;
+    updateLabels();
+    render();
+  });
+
+  els.downloadBtn.addEventListener("click", () => {
+    render();
+    const link = document.createElement("a");
+    link.download = "youtube-thumbnail-1280x720.png";
+    link.href = canvas.toDataURL("image/png", 1.0);
+    link.click();
+  });
+
+  els.resetBtn.addEventListener("click", () => {
+    els.line1.value = "아침에 삶은달걀";
+    els.line2.value = "이것과 꼭 드세요!";
+    els.line3.value = "콩팥 회복";
+    els.line4.value = "염증 완전히 사라집니다";
+
+    els.fill1.value = "#ffed00";
+    els.fill2.value = "#ffffff";
+    els.fill3.value = "#f32828";
+    els.fill4.value = "#2da817";
+
+    els.border1.value = "#050505";
+    els.border2.value = "#050505";
+    els.border3.value = "#050505";
+    els.border4.value = "#050505";
+
+    els.double3.checked = true;
+    els.inner3.value = "#ffffff";
+
+    els.y1.value = 130;
+    els.y2.value = 305;
+    els.y3.value = 500;
+    els.y4.value = 690;
+
+    els.weight1.value = 1100;
+    els.weight2.value = 1100;
+    els.weight3.value = 1100;
+    els.weight4.value = 1100;
+
+    els.size1.value = 124;
+    els.size2.value = 124;
+    els.size3.value = 124;
+    els.size4.value = 124;
+
+    els.imageMode.value = "cover";
+    els.imgX.value = 0;
+    els.imgY.value = 0;
+    els.imgZoom.value = 100;
+    els.darkness.value = 96;
+
+    updateLabels();
+    render();
+  });
+
+  updateLabels();
+  render();
+})();
+</script>
+</body>
+</html>
